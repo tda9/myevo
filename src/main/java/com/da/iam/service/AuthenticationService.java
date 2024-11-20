@@ -24,40 +24,32 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class AuthenticationService {
     private final JWTService jwtService;
-    private final RoleRepo roleRepo;
     private final UserRepo userRepo;
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
-
-
+    private final CustomUserDetailsService customUserDetailsService;
 
     public AuthenticationResponse register(RegisterRequest request) {
-
-        User user1 = new User(request.getEmail(), passwordEncoder.encode(request.getPassword()),null,null,null);
-//        var user = User.builder()
-//        .username(request.getEmail()).password(passwordEncoder.encode(request.getPassword()))
-//                .roles(request.getRole().toString()).build();
-
-
+        User userEntity = new User(request.getEmail(), passwordEncoder.encode(request.getPassword()),null,null,null);
         Set<Role> roles = new HashSet<>();
         for(String role : request.getRole()) {
-            Role role1 = new Role();
-            role1.setName(role);
-            roles.add(role1);
+            Role tmpRole = new Role();
+            tmpRole.setName(role);
+            roles.add(tmpRole);
         }
-        user1.setRoles(roles);
-        userRepo.save(user1);
+        userEntity.setRoles(roles);
+        userRepo.save(userEntity);
+
         var user = CustomUserDetails.builder()
                 .email(request.getEmail()).password(passwordEncoder.encode(request.getPassword()))
                 .authorities(request.getRole().stream().map(role -> new SimpleGrantedAuthority("ROLE_" + role)) // Prefix roles with "ROLE_"
                         .collect(Collectors.toSet())).build();
-
           var jwtToken = jwtService.generateToken(user);
         return AuthenticationResponse.builder().token(jwtToken).build();
     }
 
     public AuthenticationResponse authenticate(AuthenticationRequest request) {
-        Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(
+        authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(
                 request.getEmail(),
                 request.getPassword())
         );
@@ -65,9 +57,9 @@ public class AuthenticationService {
         var user = userRepo.findByEmail(request.getEmail()).orElseThrow();
         CustomUserDetails userDetails = CustomUserDetails.builder()
                 .email(user.getEmail()).password(user.getPassword())
-                .authorities(user.getRoles().stream().map(role -> new SimpleGrantedAuthority("ROLE_" + role.getName())) // Prefix roles with "ROLE_"
-                        .collect(Collectors.toSet())).build();
+                .authorities(customUserDetailsService.mapRolesToAuthorities(user.getRoles())).build();
         var jwtToken = jwtService.generateToken(userDetails);
+        System.out.println(user);
         return AuthenticationResponse.builder().token(jwtToken).build();
     }
 }

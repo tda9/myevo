@@ -3,6 +3,8 @@ package com.da.iam.config;
 
 import com.da.iam.repo.UserRepo;
 import com.da.iam.service.CustomUserDetailsService;
+import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -13,21 +15,22 @@ import org.springframework.security.config.annotation.authentication.configurati
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+
 
 @Configuration
 @EnableWebSecurity
+@RequiredArgsConstructor
 public class SecurityConfig {
     private final CustomUserDetailsService userDetailsService;
     private final UserRepo userRepo;
+    private final JWTFilter jwtFilter;
 
-    public SecurityConfig(UserRepo userRepo, CustomUserDetailsService userDetailsService) {
-        this.userRepo = userRepo;
-        this.userDetailsService = userDetailsService;
-    }
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -35,12 +38,16 @@ public class SecurityConfig {
 //                .cors(Customizer.withDefaults())
                 .csrf(AbstractHttpConfigurer::disable)//chu y cai nay, ko co se auto bi status 403
                 //.formLogin(Customizer.withDefaults())
-                //.httpBasic(Customizer.withDefaults())
+                .httpBasic(Customizer.withDefaults())
                 .authorizeHttpRequests(req -> req
-                        .requestMatchers("/","/register", "/login").permitAll()
+                        .requestMatchers("/","/register", "/login","/change-password").permitAll()
                         .anyRequest().authenticated()
+                )
+                .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authenticationProvider(authenticationProvider())
+                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
 
-                );
+        ;
         return http.build();
     }
 
