@@ -20,7 +20,7 @@ import java.io.IOException;
 @Component
 @RequiredArgsConstructor
 public class JWTFilter extends OncePerRequestFilter {
-    private CustomUserDetailsService customUserDetailsService;
+    private final CustomUserDetailsService customUserDetailsService;
     private final JWTService jwtService;
 
 
@@ -35,6 +35,7 @@ public class JWTFilter extends OncePerRequestFilter {
         }
         jwt = header.substring(7);
         email = jwtService.extractEmail(jwt);
+        System.out.println("----------------------------Email: " + email);
         if(email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             UserDetails userDetails = customUserDetailsService.loadUserByUsername(email);
             if(jwtService.isTokenValid(jwt, userDetails)) {
