@@ -12,7 +12,8 @@ import java.util.Set;
 @Data
 @Setter
 @Getter
-@Entity @Table(name = "users")
+@Entity
+@Table(name = "users")
 @NoArgsConstructor
 public class User {
     private static final long serialVersionUID = 1L;
@@ -27,7 +28,7 @@ public class User {
     private LocalDate dob;
     private String image;
     @JsonManagedReference
-    @ManyToMany(fetch = FetchType.EAGER,cascade = CascadeType.ALL)
+    @ManyToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
     @JoinTable(
             name = "user_roles",
             joinColumns = @JoinColumn(name = "user_id"),
@@ -37,6 +38,7 @@ public class User {
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
     private List<PasswordResetToken> passwordResetTokens;
+
     public User(String email, String password, String phone, LocalDate dob, String image) {
         this.email = email;
         this.password = password;
@@ -45,6 +47,10 @@ public class User {
         this.image = image;
     }
 
+    public User(String email, String password) {
+        this.email = email;
+        this.password = password;
+    }
 
 
 }
