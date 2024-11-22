@@ -13,23 +13,15 @@ import java.util.List;
 @Entity
 @Table(name = "roles")
 public class Role {
+
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "role_id")
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long roleId;
-
-    @Column(nullable = false, unique = true)
     private String name;
-
-    @JsonBackReference
-    @ManyToMany(mappedBy = "roles")
-    private List<User> users;
 
     @Override
     public String toString() {
-        return "{" +
-                "roleId=" + roleId +
-                ", name='" + name + '\'' +
-                '}';
+        return "{roleId=" + roleId + ", name='" + name + '\'' + '}';
     }
 }

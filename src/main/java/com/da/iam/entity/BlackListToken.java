@@ -10,11 +10,11 @@ import java.time.LocalDateTime;
 
 @Getter
 @Setter
+@Entity
+@Table(name = "blacklist_token")
 @AllArgsConstructor
 @NoArgsConstructor
-@Entity
-@Table(name = "password_reset_token")
-public class PasswordResetToken {
+public class BlackListToken {
 
     @Id
     @Column(name = "token_id")
@@ -28,10 +28,11 @@ public class PasswordResetToken {
     private LocalDateTime createdAt;
     @Column(name = "user_id")
     private Long userId;
-    public PasswordResetToken(String token, LocalDateTime expiryDate, Long userId) {
-        this.token = token;
-        this.expirationDate = expiryDate;
-        this.userId = userId;
-        this.createdAt = LocalDateTime.now();
+
+    public BlackListToken(String token, LocalDateTime expirationDate, LocalDateTime createdAt, Long userId){
+        this.token=token;
+        this.expirationDate=expirationDate;
+        this.createdAt=createdAt;
+        this.userId=userId;
     }
 }
