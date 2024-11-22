@@ -8,12 +8,8 @@ import lombok.NoArgsConstructor;
 
 import java.util.Set;
 
-@Data
+
 @Builder
-@AllArgsConstructor
-@NoArgsConstructor
-public class RegisterRequest {
-    private String email;
-    private String password;
-    private Set<String> role;
+public record RegisterRequest(String email,String password) {
+    //,Set<String> role
 }

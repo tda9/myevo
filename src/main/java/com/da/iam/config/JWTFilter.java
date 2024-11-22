@@ -1,5 +1,8 @@
 package com.da.iam.config;
 
+import com.da.iam.entity.User;
+import com.da.iam.repo.BlackListTokenRepo;
+import com.da.iam.repo.UserRepo;
 import com.da.iam.service.CustomUserDetailsService;
 import com.da.iam.service.JWTService;
 import jakarta.servlet.FilterChain;
@@ -10,42 +13,52 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 
-
 @Component
 @RequiredArgsConstructor
 public class JWTFilter extends OncePerRequestFilter {
-    private final CustomUserDetailsService customUserDetailsService;
+    private final UserDetailsService customUserDetailsService;
     private final JWTService jwtService;
-
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         final String header = request.getHeader("Authorization");
         final String jwt;
         final String email;
+
+        //skip if the request does not have a JWT token
         if (header == null || !header.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
             return;
         }
         jwt = header.substring(7);
-        email = jwtService.extractEmail(jwt);
-        System.out.println("----------------------------Email: " + email);
-        if(email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+        try {
+            email = jwtService.extractEmail(jwt);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+        //check if the email is not null and the user is not authenticated
+        if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             UserDetails userDetails = customUserDetailsService.loadUserByUsername(email);
-            if(jwtService.isTokenValid(jwt, userDetails)) {
-                UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                        userDetails,
-                        null,
-                        userDetails.getAuthorities()
-                );
-                authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                SecurityContextHolder.getContext().setAuthentication(authToken);
+
+            //check if the token is valid and not old token
+            try {
+                if (jwtService.isTokenValid(jwt, userDetails)) {
+                    UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+                            userDetails, null,userDetails.getAuthorities()
+                    );
+                    authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    SecurityContextHolder.getContext().setAuthentication(authToken);
+                }
+            } catch (Exception e) {
+                throw new RuntimeException(e);
             }
             filterChain.doFilter(request, response);
         }
