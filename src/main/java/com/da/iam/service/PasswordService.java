@@ -60,7 +60,6 @@ public class PasswordService {
         if (requestToken.getExpirationDate().isBefore(LocalDateTime.now()) || !Objects.equals(user.getUserId(), requestToken.getUserId())) {
             throw new IllegalArgumentException("Invalid or expired token");
         }
-
         user.setPassword(passwordEncoder.encode(newPassword));
         userRepo.save(user);
         passwordResetTokenRepo.delete(requestToken);

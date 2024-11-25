@@ -1,26 +1,45 @@
 package com.da.iam.exception;
 
 
-import org.springframework.http.HttpStatus;
+import com.da.iam.dto.response.BasedResponse;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import org.springframework.web.context.request.WebRequest;
 
 import java.util.Map;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<BasedResponse<?>> handleIllegalArgumentException(IllegalArgumentException ex) {
+        return ResponseEntity.status(400).body(BasedResponse.builder()
+                .requestStatus(false)
+                .httpStatusCode(400)
+                .message(ex.getMessage())
+                .exception(ex)
+                .build());
+    }
+
     @ExceptionHandler(UserNotFoundException.class)
-    public ResponseEntity<?> handleUserNotFoundException(UserNotFoundException ex) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
+    public ResponseEntity<BasedResponse<?>> handleUserNotFoundException(UserNotFoundException ex) {
+        return ResponseEntity.status(400).body(BasedResponse.builder()
+                .requestStatus(false)
+                .httpStatusCode(400)
+                .message(ex.getMessage())
+                .exception(ex)
+                .build());
     }
 
     @ExceptionHandler(ErrorResponseException.class)
     public ResponseEntity<?> handleErrorResponseException(ErrorResponseException ex) {
-        return ResponseEntity.status(400).body(Map.of("Error", ex.getMessage()));
+        return ResponseEntity.status(400).body(BasedResponse.builder()
+                .requestStatus(false)
+                .httpStatusCode(400)
+                .message(ex.getMessage())
+                .exception(ex)
+                .build());
     }
 
 }

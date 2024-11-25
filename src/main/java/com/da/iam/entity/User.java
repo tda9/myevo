@@ -10,11 +10,10 @@ import java.util.List;
 import java.util.Set;
 
 @Data
-@Setter
-@Getter
-@NoArgsConstructor
+@AllArgsConstructor
 @Entity
 @Table(name = "users")
+@Builder
 public class User {
 
     @Id
@@ -30,11 +29,5 @@ public class User {
     @Column(name = "is_confirm")
     private boolean isConfirm;
 
-    public User(String email, String password) {
-        this.email = email;
-        this.password = password;
-        isConfirm = false;
-    }
-
-
+    public User() {}
 }

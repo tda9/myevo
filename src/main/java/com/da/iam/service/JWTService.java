@@ -45,7 +45,7 @@ public class JWTService {
 
      * @return JWT token
      */
-    public String generateToken(String username) throws Exception {
+    public String generateToken(String username) {
         PrivateKey privateKey = rsaKeyUtil.getPrivateKey();
         //1 phut
         return Jwts.builder().setSubject(username).setIssuedAt(new Date()).setExpiration(new Date(System.currentTimeMillis() + 1000*60*10))

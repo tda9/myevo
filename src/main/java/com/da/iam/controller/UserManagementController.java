@@ -1,18 +1,19 @@
 package com.da.iam.controller;
 
 
-import com.da.iam.dto.AuthenticationResponse;
 import com.da.iam.dto.UserDto;
 import com.da.iam.dto.UserProfile;
+import com.da.iam.dto.response.BasedResponse;
 import com.da.iam.entity.Role;
 import com.da.iam.entity.User;
+import com.da.iam.exception.ErrorResponseException;
 import com.da.iam.exception.UserNotFoundException;
 import com.da.iam.repo.UserRoleRepo;
 import com.da.iam.service.EmailService;
-import com.da.iam.service.PasswordService;
 import com.da.iam.service.RoleService;
 import com.da.iam.service.UserService;
-import com.da.iam.utils.EmailUtils;
+
+import com.da.iam.utils.InputUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
@@ -20,8 +21,6 @@ import org.springframework.hateoas.server.mvc.WebMvcLinkBuilder;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-
-import javax.swing.text.html.parser.Entity;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -36,21 +35,21 @@ public class UserManagementController {
     private final UserService userService;
     private final RoleService roleService;
     private final UserRoleRepo userRoleRepo;
-    private final EmailService emailService;
 
     @PreAuthorize("hasAnyRole('USER','ADMIN')")
     @GetMapping("/user")
-    public ResponseEntity<EntityModel<UserDto>> getUser(@RequestParam String email) {
-        if (EmailUtils.isValidEmail(email)) {
-            User user = userService.getUserByEmail(email);
-            if (user == null) {
-                throw new UserNotFoundException("User not found");
-            }
-            UserDto userDto = new UserDto(user);
-            userDto.setRoles(roleService.getRolesByUserId(user.getUserId()));
-            return ResponseEntity.ok(EntityModel.of(userDto, linkTo(WebMvcLinkBuilder.methodOn(UserManagementController.class).getUser(email)).withSelfRel()));
-        }
-        throw new UserNotFoundException("User not found");
+    public BasedResponse<?> getUser(@RequestParam String email) {
+        InputUtils.isValidEmail(email);
+        User user = userService.getUserByEmail(email)
+                .orElseThrow(()->new UserNotFoundException("User not found"));
+
+        UserDto userDto = new UserDto(user);
+        userDto.setRoles(roleService.getRolesByUserId(user.getUserId()));
+        return BasedResponse.builder()
+                .requestStatus(true)
+                .httpStatusCode(200)
+                .data(EntityModel.of(userDto, linkTo(WebMvcLinkBuilder.methodOn(UserManagementController.class).getUser(email)).withSelfRel()))
+                .build();
     }
 
     @PreAuthorize("hasRole('ADMIN')")
@@ -69,10 +68,10 @@ public class UserManagementController {
     @PutMapping("/users")
     public ResponseEntity<EntityModel<?>> updateUser(@RequestBody UserProfile userProfile) {
         User updatedUser = null;
-        try{
-            updatedUser = userService.updateUser(userProfile) ;
-        }catch (Exception e){
-            return ResponseEntity.status(400).body(EntityModel.of(Map.of("Error", e.getMessage()), linkTo(WebMvcLinkBuilder.methodOn(UserManagementController.class).getUser(updatedUser.getEmail())).withSelfRel()));
+        try {
+            updatedUser = userService.updateUser(userProfile);
+        } catch (Exception e) {
+            throw new ErrorResponseException("Error user profile");
         }
         return ResponseEntity.ok(EntityModel.of(updatedUser, linkTo(WebMvcLinkBuilder.methodOn(UserManagementController.class).getUser(updatedUser.getEmail())).withSelfRel()));
     }

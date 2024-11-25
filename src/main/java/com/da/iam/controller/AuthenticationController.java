@@ -1,8 +1,8 @@
 package com.da.iam.controller;
 
-import com.da.iam.dto.AuthenticationRequest;
-import com.da.iam.dto.AuthenticationResponse;
-import com.da.iam.dto.RegisterRequest;
+import com.da.iam.dto.request.LoginRequest;
+import com.da.iam.dto.request.RegisterRequest;
+import com.da.iam.dto.response.BasedResponse;
 import com.da.iam.exception.ErrorResponseException;
 import com.da.iam.service.AuthenticationService;
 import com.da.iam.service.PasswordService;
@@ -20,72 +20,80 @@ public class AuthenticationController {
     private final AuthenticationService authenticationService;
 
     @GetMapping("/confirmation-registration")
-    public ResponseEntity<?> confirmRegister(@RequestParam String email, @RequestParam String token) throws Exception {
+    public BasedResponse<?> confirmRegister(@RequestParam String email, @RequestParam String token){
         try {
             authenticationService.confirmEmail(email, token);
+            return BasedResponse.builder()
+                    .httpStatusCode(200)
+                    .requestStatus(true)
+                    .message("Confirm register successful")
+                    .data(email)
+                    .build();
         } catch (Exception e) {
             throw new ErrorResponseException(e.getMessage());
         }
-        return ResponseEntity.ok().body("Confirm register successful");
-    }
-    @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestBody RegisterRequest request) {
-        AuthenticationResponse response = null;
-        try {
-            response = authenticationService.register(request);
-            return ResponseEntity.status(200).body(response);
-        } catch (Exception e) {
-            return ResponseEntity.status(400).body(Map.of("Error", e.getMessage()));
-        }
     }
 
-    //TODO:stop brute force attack login attempts
-    //chua lam moi token jwt? hoac roi
+    @PostMapping("/register")
+    public BasedResponse<?> register(@RequestBody RegisterRequest request) {
+        return authenticationService.register(request);
+    }
+
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody AuthenticationRequest request) {
-        AuthenticationResponse response = null;
-        try {
-            response = authenticationService.authenticate(request);
-            return ResponseEntity.status(200).body(response);
-        } catch (Exception e) {
-            return ResponseEntity.status(400).body(Map.of("Error", e.getMessage()));
-        }
+    public BasedResponse<?> login(@RequestBody LoginRequest request) {
+            return authenticationService.authenticate(request);
     }
 
     @PreAuthorize("hasAnyRole('USER','ADMIN')")
     @PostMapping("/change-password")
-    public ResponseEntity<?> changePassword(
-            @RequestParam String currentPassword,@RequestParam String newPassword,
-            @RequestParam String confirmPassword,@RequestParam String email) {
+    public BasedResponse<?> changePassword(
+            @RequestParam String currentPassword, @RequestParam String newPassword,
+            @RequestParam String confirmPassword, @RequestParam String email) {
         passwordService.changePassword(currentPassword, newPassword, confirmPassword, email);
-        return ResponseEntity.ok().body("Change password successful");
+        return BasedResponse.builder()
+                .httpStatusCode(200)
+                .requestStatus(true)
+                .message("Change password successful")
+                .data(email)
+                .build();
     }
 
-    //TODO:stop spamming email and remove token from db after use
     @PostMapping("/forgot-password")
-    public ResponseEntity<?> forgotPassword(@RequestParam String email) {
+    public BasedResponse<?> forgotPassword(@RequestParam String email) {
         try {
             passwordService.forgotPassword(email);
+            return BasedResponse.builder()
+                    .data(email)
+                    .httpStatusCode(200)
+                    .requestStatus(true)
+                    .message("Sending Mail Reset Password Successful")
+                    .build();
         } catch (Exception e) {
-            return ResponseEntity.status(400).body(Map.of("Error", e.getMessage()));
+            throw new ErrorResponseException("Error forgot password");
         }
-        return ResponseEntity.ok().body("Sending Mail Reset Password Successful");
     }
 
     @GetMapping("/reset-password")
-    public ResponseEntity resetPassword(@RequestParam String email, @RequestParam String newPassword, @RequestParam String token) {
+    public BasedResponse<?> resetPassword(@RequestParam String email, @RequestParam String newPassword, @RequestParam String token) {
         passwordService.resetPassword(email, newPassword, token);
-        return ResponseEntity.ok().body("Reset password successful");
+        return BasedResponse.builder()
+                .httpStatusCode(200)
+                .requestStatus(true)
+                .data(email)
+                .message("Reset password successful")
+                .build();
     }
 
     @PostMapping("/api/logout")//de /logout khong se trung default url, va khong chay dc
-    public String logout( @RequestParam String email) {
+    public BasedResponse<?> logout(@RequestParam String email) {
         authenticationService.logout(email);
-        return "Logged out";
+        return BasedResponse.builder()
+                .httpStatusCode(200)
+                .requestStatus(true)
+                .message("Logged out")
+                .data(email)
+                .build();
     }
-
-
-
 
     @GetMapping("/")
     @PreAuthorize("hasAnyRole('USER','ADMIN')")
